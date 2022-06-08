@@ -14,6 +14,9 @@ import java.util.Objects;
 /**
  * class InfoTable extends JDialog, presents a dynamic changing table presenting the zoo animals information
  * in a JDialog.
+ *
+ * @author Sagie Baram 205591829
+ * @author Lior Shilon 316126143
  */
 public class InfoTableDialog extends JDialog {
     /**
@@ -74,7 +77,7 @@ public class InfoTableDialog extends JDialog {
             @Override
             // called when closing the dialog holding the table.
             public void windowClosing(WindowEvent e) {
-                //indicating the table is mot open.
+                //indicating the table is not open.
                 setIsOpen(false);
                 dispose();
             }
@@ -97,6 +100,7 @@ public class InfoTableDialog extends JDialog {
      */
     public void setIsOpen(boolean state){
         isOpen = state;
+        System.out.println(isOpen);
         setVisible(state);
     }
 

@@ -3,10 +3,15 @@ package com.graphics;
 import com.animals.Animal;
 
 import java.util.ArrayList;
+import java.util.concurrent.ExecutorService;
+import java.util.concurrent.Executors;
 
 /**
  * AnimalModel represents the model used for the zoo.
  * it consists of array list with default set size.
+ *
+ * @author Sagie Baram 205591829
+ * @author Lior Shilon 316126143
  */
 public class AnimalModel {
     /**
@@ -21,12 +26,19 @@ public class AnimalModel {
      * boolean value indicating if the model is changed or not.
      */
     private boolean isChanged;
+    /**
+     * boolean value indicating the current model sleep state.
+     */
+    private boolean sleepState;
+
+    private ExecutorService pool;
 
     /**
      * AnimalModel constructor.
      * initiating the array list and default state to false.
      */
     AnimalModel(){
+        pool = Executors.newFixedThreadPool(MAX_SIZE);
         animals = new ArrayList<>();
         isChanged = false;
     }
@@ -39,7 +51,9 @@ public class AnimalModel {
     public boolean addAnimal(Animal animal){
         boolean isSuccess = false;
         if (animals.size() < MAX_SIZE){
+            animal.setThreadSuspended(isAsleep());
             animals.add(animal);
+            pool.execute(animal);
             isSuccess = true;
         }
         return isSuccess;
@@ -70,6 +84,17 @@ public class AnimalModel {
     }
 
     /**
+     * the sleep method, setting all animals in model to suspended state
+     * sleep state of the model is set to true.
+     */
+    public void sleep(){
+        for (Animal animal : animals){
+            animal.setSuspended();
+            sleepState = true;
+        }
+    }
+
+    /**
      * Animal names getter
      * @return String array of the animal names of all the animals in the animal model.
      */
@@ -83,6 +108,35 @@ public class AnimalModel {
         return names;
     }
 
+    /**
+     * the wakeUp method, setting all animals in model to resumed state
+     * sleep state of the model is set to false.
+     */
+    public void wakeUp(){
+        for (Animal animal : animals){
+            animal.setResumed();
+            sleepState = false;
+        }
+    }
+
+    /**
+     * stopping all animal threads in the model.
+     * allowing safe thread termination.
+     */
+    public void stopAll() {
+        for (Animal animal : animals){
+            animal.stop();
+        }
+        pool.shutdown();
+    }
+
+    /**
+     * sleepState getter.
+     * @return boolean representation of the sleepState, true if sleep is on false otherwise.
+     */
+    public boolean isAsleep() {
+        return sleepState;
+    }
 
     /**
      * containsAnimalName evaluates if the animal model contains a given name or not.

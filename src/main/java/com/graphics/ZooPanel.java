@@ -16,12 +16,21 @@ import java.awt.event.ActionListener;
 import java.awt.image.BufferedImage;
 import java.io.File;
 import java.io.IOException;
+import java.text.Normalizer;
+import java.util.ConcurrentModificationException;
+import java.util.concurrent.atomic.AtomicBoolean;
 
 /**
  * ZooPanel is a panel contained in ZooFrame, it holds the action panel which has buttons that open different types
  * of dialogs to interact with the model.
+ * Every ZooPanel object is a thread.
+ *
+ *
+ * @author Sagie Baram 205591829
+ * @author Lior Shilon 316126143
  */
-public class ZooPanel extends JPanel implements ActionListener {
+public class ZooPanel extends JPanel implements ActionListener, IThread {
+    private static ZooPanel instance = null;
     /**
      * static integer representing the total amount of eaten objects (animals or food).
      */
@@ -44,6 +53,17 @@ public class ZooPanel extends JPanel implements ActionListener {
     private BufferedImage backgroundImage;
 
     /**
+     * Thread object indicating the controller thread.
+     */
+    private Thread controller;
+
+    /**
+     * Atomic boolean flag which indicates if the thread is alive or not.
+     */
+    private AtomicBoolean threadAlive = new AtomicBoolean(true);
+
+
+    /**
      * ZooPanel constructor.
      */
     public ZooPanel() {
@@ -55,25 +75,31 @@ public class ZooPanel extends JPanel implements ActionListener {
         JPanel actionPanel = new JPanel();
         // instantiating buttons
         JButton addAnimal = new JButton("Add Animal");
-        JButton moveAnimal = new JButton("Move Animal");
+        JButton sleep = new JButton("Sleep");
+        JButton wakeUp = new JButton("Wake Up");
         JButton clear = new JButton("Clear All");
         JButton food = new JButton("Food");
+        JButton color = new JButton("Change Color");
         JButton info = new JButton("Info");
         JButton exit = new JButton("Exit");
 
         // adding to action listener
         addAnimal.addActionListener(this);
-        moveAnimal.addActionListener(this);
+        sleep.addActionListener(this);
+        wakeUp.addActionListener(this);
         clear.addActionListener(this);
         food.addActionListener(this);
+        color.addActionListener(this);
         info.addActionListener(this);
         exit.addActionListener(this);
 
         // adding buttons to panel
         actionPanel.add(addAnimal);
-        actionPanel.add(moveAnimal);
+        actionPanel.add(sleep);
+        actionPanel.add(wakeUp);
         actionPanel.add(clear);
         actionPanel.add(food);
+        actionPanel.add(color);
         actionPanel.add(info);
         actionPanel.add(exit);
 
@@ -88,6 +114,14 @@ public class ZooPanel extends JPanel implements ActionListener {
 
         this.setLayout(new BorderLayout());
         this.add(actionPanel, BorderLayout.SOUTH);
+
+        this.start();
+    }
+
+    public static ZooPanel getInstance() {
+        if (instance == null)
+            instance = new ZooPanel();
+        return instance;
     }
 
     /**
@@ -127,9 +161,9 @@ public class ZooPanel extends JPanel implements ActionListener {
                 null);
 
         switch (result) {
-            case 0 -> setPanelFood(new Lettuce());
-            case 1 -> setPanelFood(new Cabbage());
-            case 2 -> setPanelFood(new Meat());
+            case 0 -> setPanelFood(Lettuce.getInstance());
+            case 1 -> setPanelFood(Cabbage.getInstance());
+            case 2 -> setPanelFood(Meat.getInstance());
         }
     }
 
@@ -192,6 +226,8 @@ public class ZooPanel extends JPanel implements ActionListener {
             for (int j = i + 1; j < model.getAnimalModelSize(); j++) {
                 Animal prey = model.getAnimalModel().get(j);
                 if (conditionalEating(predator, prey)){
+                    // terminates the thread.
+                    prey.stop();
                     // if predator eat prey, deduce the amount of eat count of prey off the total eat count.
                     setTotalEatCount(getTotalEatCount() - prey.getEatCount());
                     // remove the prey.
@@ -202,6 +238,8 @@ public class ZooPanel extends JPanel implements ActionListener {
                     // the model was changed.
                     model.setChangesState(true);
                 } else if (conditionalEating(prey, predator)) {
+                    // terminates the thread.
+                    predator.stop();
                     // if prey eat predator, deduce the amount of eat count of predator off the total eat count.
                     setTotalEatCount(getTotalEatCount() - predator.getEatCount());
                     // remove the predator.
@@ -223,20 +261,6 @@ public class ZooPanel extends JPanel implements ActionListener {
     public void updateEatCount(Animal animal){
         animal.eatInc();
         totalEatCountInc();
-    }
-
-    /**
-     * manageZoo is the controller method, repaints the panel when a change occurs to the model.
-     * it runs the attemptEatAnimal method when called and tries to make changes to the model.
-     * if the info table dialog is open it updates the table for a dynamic feel.
-     */
-    public void manageZoo() {
-        if (isChange()) {
-            repaint();
-        }
-        attemptEatAnimal();
-        if (InfoTableDialog.getIsOpen())
-            infoTable.updateTable();
     }
 
     /**
@@ -317,17 +341,10 @@ public class ZooPanel extends JPanel implements ActionListener {
         String actionCommand = e.getActionCommand();
         switch (actionCommand) {
             case "Add Animal" -> new AddAnimalDialog(model, this);
-            case "Move Animal" -> {
-                if (model.getAnimalModelSize() > 0) {
-                    new MoveAnimalDialog(model, this);
-                } else {
-                    String message = "Zoo is currently empty!";
-                    try {
-                        throw new PrivateGraphicUtils.ErrorDialogException(this, message);
-                    } catch (PrivateGraphicUtils.ErrorDialogException ignored) {}
-                }
-            }
+            case "Sleep" -> model.sleep();
+            case "Wake Up" -> model.wakeUp();
             case "Clear All" -> {
+                model.stopAll();
                 model.removeAllAnimals();
                 setTotalEatCount(0);
                 infoTable.setIsOpen(false);
@@ -338,11 +355,24 @@ public class ZooPanel extends JPanel implements ActionListener {
                 createFoodDialog();
                 repaint();
             }
-            case "Info" -> {
+            case "Change Color" ->{
+                if(model.getAnimalModelSize() > 0){
+                    new MoveAnimalDialog(model, this);
+                }
+                else {
+                    try {
+                        String message = "Zoo is currently empty!";
+                        throw new PrivateGraphicUtils.ErrorDialogException(this, message);
+                    } catch (PrivateGraphicUtils.ErrorDialogException ignored) {}
+                }
+            }
+                case "Info" -> {
                 //creating animals details list
                 if (model.getAnimalModelSize() > 0) {
                     if (!InfoTableDialog.getIsOpen()){
+                        System.out.println("first");
                         infoTable = new InfoTableDialog(model);
+                        System.out.println("ersdfsdfsdf");
                         infoTable.setIsOpen(true);
                     }
                 } else {
@@ -352,7 +382,36 @@ public class ZooPanel extends JPanel implements ActionListener {
                     } catch (PrivateGraphicUtils.ErrorDialogException ignored) {}
                 }
             }
-            case "Exit" -> System.exit(1);
+            case "Exit" -> {
+                // terminating animal's threads.
+                model.stopAll();
+                // terminating ZooPanel thread.
+                stop();
+                System.exit(1);
+            }
+        }
+    }
+
+    @Override
+    public void start(){
+        controller = new Thread(this);
+        controller.start();
+    }
+
+    @Override
+    public void stop(){
+        threadAlive.set(false);
+    }
+
+    @Override
+    public void run() {
+        while (threadAlive.get()) {
+            if (isChange()) {
+                repaint();
+            }
+            attemptEatAnimal();
+            if (InfoTableDialog.getIsOpen())
+                infoTable.updateTable();
         }
     }
 }

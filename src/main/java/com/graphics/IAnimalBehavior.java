@@ -2,6 +2,9 @@ package com.graphics;
 
 /**
  * IAnimalBehavior is an interface implemented by Animals who wish to have GUI attributes.
+ *
+ * @author Sagie Baram 205591829
+ * @author Lior Shilon 316126143
  */
 public interface IAnimalBehavior {
     /**
@@ -37,4 +40,16 @@ public interface IAnimalBehavior {
      * @param state boolean value to set the animal state.
      */
     public void setChanges (boolean state);
+
+    /**
+     * Suspend state setter.
+     * animal enters a suspended state - waiting in ready queue.
+     */
+    public void setSuspended();
+
+    /**
+     * Resumed state setter.
+     * animal enters resumed state - done waiting in ready queue.
+     */
+    public void setResumed();
 }

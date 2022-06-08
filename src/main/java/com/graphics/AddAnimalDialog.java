@@ -18,6 +18,11 @@ import static com.privateutil.PrivateGraphicUtils.findAnimalImagePath;
  * users can select animal types from a combobox, input name, size vertical and horizontal speed and a color.
  * the ui will present an appropriate image (based on animal type and color) dynamically.
  * weight, unique fields and default location on the zoo panel are also changed dynamically based on size and animal type.
+ * @see com.graphics.AnimalDialog
+ * @see com.graphics.ZooPanel
+ *
+ * @author Sagie Baram 205591829
+ * @author Lior Shilon 316126143
  */
 public class AddAnimalDialog extends AnimalDialog {
     /**
@@ -177,7 +182,7 @@ public class AddAnimalDialog extends AnimalDialog {
      * @return JPanel object of the north panel.
      */
     @Override
-    protected JPanel createNorthPanel() {
+    public JPanel createNorthPanel() {
         JPanel animalTypePanel = new JPanel();
 
         // setting border
@@ -201,7 +206,7 @@ public class AddAnimalDialog extends AnimalDialog {
      * @return JPanel object of the west panel.
      */
     @Override
-    protected JPanel createWestPanel() {
+    public JPanel createWestPanel() {
         // initializing panels.
         JPanel inputPanel = new JPanel();
         JPanel northInputPanel = new JPanel();
@@ -358,7 +363,7 @@ public class AddAnimalDialog extends AnimalDialog {
      * @return JPanel object of the west panel.
      */
     @Override
-    protected JPanel createEastPanel() {
+    public JPanel createEastPanel() {
         // initializing image panel with GridBagLayout.
         JPanel imagePanel = new JPanel(new GridBagLayout());
         // loading the image path with default values into a label.
@@ -383,7 +388,7 @@ public class AddAnimalDialog extends AnimalDialog {
      * @return JPanel object of the west panel.
      */
     @Override
-    protected JPanel createSouthPanel() {
+    public JPanel createSouthPanel() {
         // initialize the button panel.
         JPanel buttonPanel = new JPanel();
 
@@ -525,11 +530,17 @@ public class AddAnimalDialog extends AnimalDialog {
             if (getModel().getAnimalModelSize() < AnimalModel.getModelMaxSize()) {
                 Animal animal = null;
                 switch (animalType) {
-                    case "Lion" -> animal = new Lion(animalName, animalSize, animalHSpeed, animalVSpeed, animalColor);
-                    case "Bear" -> animal = new Bear(animalName, animalSize, animalHSpeed, animalVSpeed, animalColor);
-                    case "Giraffe" -> animal = new Giraffe(animalName, animalSize, animalHSpeed, animalVSpeed, animalColor);
-                    case "Elephant" -> animal = new Elephant(animalName, animalSize, animalHSpeed, animalVSpeed, animalColor);
-                    case "Turtle" -> animal = new Turtle(animalName, animalSize, animalHSpeed, animalVSpeed, animalColor);
+                    case "Lion" -> animal = new Lion(animalName, animalSize, animalHSpeed, animalVSpeed, "NATURAL");
+                    case "Bear" -> animal = new Bear(animalName, animalSize, animalHSpeed, animalVSpeed, "NATURAL");
+                    case "Giraffe" -> animal = new Giraffe(animalName, animalSize, animalHSpeed, animalVSpeed, "NATURAL");
+                    case "Elephant" -> animal = new Elephant(animalName, animalSize, animalHSpeed, animalVSpeed, "NATURAL");
+                    case "Turtle" -> animal = new Turtle(animalName, animalSize, animalHSpeed, animalVSpeed, "NATURAL");
+                }
+                System.out.println(animalColor);
+                // using decorator to determine animal color
+                switch (animalColor){
+                    case "Red" -> animal = new AnimalRedDecorator(animal).makeAnimal();
+                    case "Blue" -> animal = new AnimalBlueDecorator(animal).makeAnimal();
                 }
 
                 assert animal != null;
@@ -553,9 +564,6 @@ public class AddAnimalDialog extends AnimalDialog {
                 // if the info table is open, it will update it dynamically upon adding a new animal.
                 if (InfoTableDialog.getIsOpen())
                     getZooPanel().getInfoTable().updateTable();
-
-                // calling manage zoo to repaint the panel.
-                getZooPanel().manageZoo();
             } else {
                 try {
                     String message = "You cannot add more than 10 animals";

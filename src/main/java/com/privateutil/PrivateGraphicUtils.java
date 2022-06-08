@@ -14,6 +14,9 @@ import static com.graphics.IDrawable.PICTURE_PATH;
 
 /**
  * PrivateGraphicUtils class holds utility methods used within the UI parts of the project.
+ *
+ * @author Sagie Baram 205591829
+ * @author Lior Shilon 316126143
  */
 public class PrivateGraphicUtils {
 
@@ -61,7 +64,6 @@ public class PrivateGraphicUtils {
             path.append("2.png");
         }
 
-        System.out.println(path);
         return String.valueOf(path);
     }
 
@@ -154,7 +156,7 @@ public class PrivateGraphicUtils {
 
     /**
      * class ErrorDialogException extends class Exception.
-     * handles invalid input in Dialogs (AddAnimalDialog and MoveAnimalDialog).
+     * handles invalid input in Dialogs (AddAnimalDialog).
      */
     public static class ErrorDialogException extends Exception {
         /**

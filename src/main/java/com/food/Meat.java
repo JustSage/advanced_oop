@@ -2,13 +2,23 @@ package com.food;
 
 /**
  * class Meat, handles food of type meat, extends abstract class Food.
+ *
+ * @author Sagie Baram 205591829
+ * @author Lior Shilon 316126143
  */
 public class Meat extends Food{
-
+    private static Meat instance = null;
     /**
      * Meat constructor.
      */
-    public Meat() { }
+    private Meat() { }
+
+    public static Meat getInstance() {
+        if (instance == null){
+            instance = new Meat();
+        }
+        return instance;
+    }
 
     /**
      * @see com.food.IEdible#getFoodType()
